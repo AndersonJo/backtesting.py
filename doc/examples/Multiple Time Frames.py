@@ -58,9 +58,9 @@ def RSI(array, n):
 #
 # Buy a position when:
 # * weekly RSI(30) $\geq$ daily RSI(30) $>$ 70
-# * Close $>$ MA(10) $>$ MA(20) $>$ MA(50) $>$ MA(100)
+# * close $>$ MA(10) $>$ MA(20) $>$ MA(50) $>$ MA(100)
 #
-# Close the position when:
+# close the position when:
 # * Daily close is more than 2% _below_ MA(10)
 # * 8% fixed stop loss is hit
 #

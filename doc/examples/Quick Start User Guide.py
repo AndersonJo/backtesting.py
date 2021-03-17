@@ -27,7 +27,7 @@
 # [OHLC](https://en.wikipedia.org/wiki/Open-high-low-close_chart)
 # data_ (stocks, forex, futures, crypto, ...) as a
 # [pandas.DataFrame](https://pandas.pydata.org/pandas-docs/stable/10min.html)
-# with columns `'Open'`, `'High'`, `'Low'`, `'Close'` and (optionally) `'Volume'`. Such data is widely obtainable (see: 
+# with columns `'open'`, `'high'`, `'low'`, `'close'` and (optionally) `'volume'`. Such data is widely obtainable (see:
 # [pandas-datareader](https://pandas-datareader.readthedocs.io/en/latest/),
 # [Quandl](https://www.quandl.com/tools/python),
 # [findatapy](https://github.com/cuemacro/findatapy)).
@@ -138,9 +138,9 @@ class SmaCross(Strategy):
 #             self.sell()
 # -
 
-# In `init()`, the whole series of points was available, whereas **in `next()`, the length of `self.data` and all declared indicators is adjusted** on each `next()` call so that `array[-1]` (e.g. `self.data.Close[-1]` or `self.sma1[-1]`) always contains the most recent value, `array[-2]` the previous value, etc. (ordinary Python indexing of ascending-sorted 1D arrays).
+# In `init()`, the whole series of points was available, whereas **in `next()`, the length of `self.data` and all declared indicators is adjusted** on each `next()` call so that `array[-1]` (e.g. `self.data.close[-1]` or `self.sma1[-1]`) always contains the most recent value, `array[-2]` the previous value, etc. (ordinary Python indexing of ascending-sorted 1D arrays).
 #
-# **Note**: `self.data` and any indicators wrapped with `self.I` (e.g. `self.sma1`) are NumPy arrays for performance reasons. If you prefer pandas Series or DataFrame objects, use `Strategy.data.<column>.s` or `Strategy.data.df` accessors respectively. You could also construct the series manually, e.g. `pd.Series(self.data.Close, index=self.data.index)`.
+# **Note**: `self.data` and any indicators wrapped with `self.I` (e.g. `self.sma1`) are NumPy arrays for performance reasons. If you prefer pandas Series or DataFrame objects, use `Strategy.data.<column>.s` or `Strategy.data.df` accessors respectively. You could also construct the series manually, e.g. `pd.Series(self.data.close, index=self.data.index)`.
 #
 # We might avoid `self.position.close()` calls if we primed the
 # [`Backtest`](https://kernc.github.io/backtesting.py/doc/backtesting/backtesting.html#backtesting.backtesting.Backtest)

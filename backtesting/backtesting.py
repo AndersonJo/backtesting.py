@@ -111,7 +111,7 @@ class Strategy(metaclass=ABCMeta):
         For example, using simple moving average function from TA-Lib:
 
             def init():
-                self.sma = self.I(ta.SMA, self.data.Close, self.n_sma)
+                self.sma = self.I(ta.SMA, self.data.close, self.n_sma)
         """
         if name is None:
             params = ','.join(filter(None, map(_as_str, chain(args, kwargs.values()))))
@@ -137,16 +137,16 @@ class Strategy(metaclass=ABCMeta):
         if is_arraylike and np.argmax(value.shape) == 0:
             value = value.T
 
-        if not is_arraylike or not 1 <= value.ndim <= 2 or value.shape[-1] != len(self._data.Close):
+        if not is_arraylike or not 1 <= value.ndim <= 2 or value.shape[-1] != len(self._data.close):
             raise ValueError(
                 'Indicators must return (optionally a tuple of) numpy.arrays of same '
-                f'length as `data` (data shape: {self._data.Close.shape}; indicator "{name}"'
+                f'length as `data` (data shape: {self._data.close.shape}; indicator "{name}"'
                 f'shape: {getattr(value, "shape" , "")}, returned value: {value})')
 
         if plot and overlay is None and np.issubdtype(value.dtype, np.number):
-            x = value / self._data.Close
+            x = value / self._data.close
             # By default, overlay if strong majority of indicator values
-            # is within 30% of Close
+            # is within 30% of close
             with np.errstate(invalid='ignore'):
                 overlay = ((x < 1.4) & (x > .6)).mean() > .6
 
@@ -247,11 +247,11 @@ class Strategy(metaclass=ABCMeta):
           price point revelation. In each call of
           `backtesting.backtesting.Strategy.next` (iteratively called by
           `backtesting.backtesting.Backtest` internally),
-          the last array value (e.g. `data.Close[-1]`)
+          the last array value (e.g. `data.close[-1]`)
           is always the _most recent_ value.
-        * If you need data arrays (e.g. `data.Close`) to be indexed
+        * If you need data arrays (e.g. `data.close`) to be indexed
           **Pandas series**, you can call their `.s` accessor
-          (e.g. `data.Close.s`). If you need the whole of data
+          (e.g. `data.close.s`). If you need the whole of data
           as a **DataFrame**, use `.df` accessor (i.e. `data.df`).
         """
         return self._data
@@ -344,7 +344,7 @@ class Position:
 
     def close(self, portion: float = 1.):
         """
-        Close portion of position by closing `portion` of each active trade. See `Trade.close`.
+        close portion of position by closing `portion` of each active trade. See `Trade.close`.
         """
         for trade in self.__broker.trades:
             trade.close(portion)
@@ -736,7 +736,7 @@ class _Broker:
     @property
     def last_price(self) -> float:
         """ Price at the last (current) close. """
-        return self._data.Close[-1]
+        return self._data.close[-1]
 
     def _adjusted_price(self, size=None, price=None) -> float:
         """
@@ -767,15 +767,15 @@ class _Broker:
         if equity <= 0:
             assert self.margin_available <= 0
             for trade in self.trades:
-                self._close_trade(trade, self._data.Close[-1], i)
+                self._close_trade(trade, self._data.close[-1], i)
             self._cash = 0
             self._equity[i:] = 0
             raise _OutOfMoneyError
 
     def _process_orders(self):
         data = self._data
-        open, high, low = data.Open[-1], data.High[-1], data.Low[-1]
-        prev_close = data.Close[-2]
+        open, high, low = data.open[-1], data.high[-1], data.low[-1]
+        prev_close = data.close[-2]
         reprocess_orders = False
 
         # Process orders
@@ -990,11 +990,11 @@ class Backtest:
         Initialize a backtest. Requires data and a strategy to test.
 
         `data` is a `pd.DataFrame` with columns:
-        `Open`, `High`, `Low`, `Close`, and (optionally) `Volume`.
+        `open`, `high`, `low`, `close`, and (optionally) `volume`.
         If any columns are missing, set them to what you have available,
         e.g.
 
-            df['Open'] = df['High'] = df['Low'] = df['Close']
+            df['open'] = df['high'] = df['low'] = df['close']
 
         The passed data frame can contain additional columns that
         can be used by the strategy (e.g. sentiment info).
@@ -1053,19 +1053,19 @@ class Backtest:
             except ValueError:
                 pass
 
-        if 'Volume' not in data:
-            data['Volume'] = np.nan
+        if 'volume' not in data:
+            data['volume'] = np.nan
 
         if len(data) == 0:
             raise ValueError('OHLC `data` is empty')
-        if len(data.columns.intersection({'Open', 'High', 'Low', 'Close', 'Volume'})) != 5:
+        if len(data.columns.intersection({'open', 'high', 'low', 'close', 'volume'})) != 5:
             raise ValueError("`data` must be a pandas.DataFrame with columns "
-                             "'Open', 'High', 'Low', 'Close', and (optionally) 'Volume'")
-        if data[['Open', 'High', 'Low', 'Close']].isnull().values.any():
+                             "'open', 'high', 'low', 'close', and (optionally) 'volume'")
+        if data[['open', 'high', 'low', 'close']].isnull().values.any():
             raise ValueError('Some OHLC values are missing (NaN). '
                              'Please strip those lines with `df.dropna()` or '
                              'fill them in with `df.interpolate()` or whatever.')
-        if np.any(data['Close'] > cash):
+        if np.any(data['close'] > cash):
             warnings.warn('Some prices are larger than initial cash value. Note that fractional '
                           'trading is not supported. If you want to trade Bitcoin, '
                           'increase initial cash, or trade μBTC or satoshis instead (GH-134).',
@@ -1164,7 +1164,7 @@ class Backtest:
                 # Next tick, a moment before bar close
                 strategy.next()
             else:
-                # Close any remaining open trades so they produce some stats
+                # close any remaining open trades so they produce some stats
                 for trade in broker.trades:
                     trade.close()
 
@@ -1550,7 +1550,7 @@ class Backtest:
         s.loc['Equity Final [$]'] = equity[-1]
         s.loc['Equity Peak [$]'] = equity.max()
         s.loc['Return [%]'] = (equity[-1] - equity[0]) / equity[0] * 100
-        c = data.Close.values
+        c = data.close.values
         s.loc['Buy & Hold Return [%]'] = (c[-1] - c[0]) / c[0] * 100  # long-only return
 
         def geometric_mean(returns):

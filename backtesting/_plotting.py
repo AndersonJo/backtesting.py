@@ -170,7 +170,7 @@ def plot(*, results: pd.Series,
     equity_data = results['_equity_curve'].copy(deep=False)
     trades = results['_trades']
 
-    plot_volume = plot_volume and not df.Volume.isnull().all()
+    plot_volume = plot_volume and not df.volume.isnull().all()
     plot_equity = plot_equity and not trades.empty
     plot_return = plot_return and not trades.empty
     plot_pl = plot_pl and not trades.empty
@@ -210,7 +210,7 @@ def plot(*, results: pd.Series,
     figs_above_ohlc, figs_below_ohlc = [], []
 
     source = ColumnDataSource(df)
-    source.add((df.Close >= df.Open).values.astype(np.uint8).astype(str), 'inc')
+    source.add((df.close >= df.open).values.astype(np.uint8).astype(str), 'inc')
 
     trade_source = ColumnDataSource(dict(
         index=trades['ExitBar'],
@@ -240,15 +240,15 @@ return this.labels[index] || "";
         ''')
 
     NBSP = '\N{NBSP}' * 4
-    ohlc_extreme_values = df[['High', 'Low']].copy(deep=False)
+    ohlc_extreme_values = df[['high', 'low']].copy(deep=False)
     ohlc_tooltips = [
         ('x, y', NBSP.join(('$index',
                             '$y{0,0.0[0000]}'))),
-        ('OHLC', NBSP.join(('@Open{0,0.0[0000]}',
-                            '@High{0,0.0[0000]}',
-                            '@Low{0,0.0[0000]}',
-                            '@Close{0,0.0[0000]}'))),
-        ('Volume', '@Volume{0,0}')]
+        ('OHLC', NBSP.join(('@open{0,0.0[0000]}',
+                            '@high{0,0.0[0000]}',
+                            '@low{0,0.0[0000]}',
+                            '@close{0,0.0[0000]}'))),
+        ('volume', '@volume{0,0}')]
 
     def new_indicator_figure(**kwargs):
         kwargs.setdefault('plot_height', 90)
@@ -409,12 +409,12 @@ return this.labels[index] || "";
 
     def _plot_volume_section():
         """Volume section"""
-        fig = new_indicator_figure(y_axis_label="Volume")
+        fig = new_indicator_figure(y_axis_label="volume")
         fig.xaxis.formatter = fig_ohlc.xaxis[0].formatter
         fig.xaxis.visible = True
         fig_ohlc.xaxis.visible = False  # Show only Volume's xaxis
-        r = fig.vbar('index', BAR_WIDTH, 'Volume', source=source, color=inc_cmap)
-        set_tooltips(fig, [('Volume', '@Volume{0.00 a}')], renderers=[r])
+        r = fig.vbar('index', BAR_WIDTH, 'volume', source=source, color=inc_cmap)
+        set_tooltips(fig, [('volume', '@volume{0.00 a}')], renderers=[r])
         fig.yaxis.formatter = NumeralTickFormatter(format="0 a")
         return fig
 
@@ -452,19 +452,19 @@ return this.labels[index] || "";
         df2.index += df2['_width'] / 2 - .5
         df2['_width'] -= .1  # Candles don't touch
 
-        df2['inc'] = (df2.Close >= df2.Open).astype(int).astype(str)
+        df2['inc'] = (df2.close >= df2.open).astype(int).astype(str)
         df2.index.name = None
         source2 = ColumnDataSource(df2)
-        fig_ohlc.segment('index', 'High', 'index', 'Low', source=source2, color='#bbbbbb')
+        fig_ohlc.segment('index', 'high', 'index', 'low', source=source2, color='#bbbbbb')
         colors_lighter = [lightness(BEAR_COLOR, .92),
                           lightness(BULL_COLOR, .92)]
-        fig_ohlc.vbar('index', '_width', 'Open', 'Close', source=source2, line_color=None,
+        fig_ohlc.vbar('index', '_width', 'open', 'close', source=source2, line_color=None,
                       fill_color=factor_cmap('inc', colors_lighter, ['0', '1']))
 
     def _plot_ohlc():
         """Main OHLC bars"""
-        fig_ohlc.segment('index', 'High', 'index', 'Low', source=source, color="black")
-        r = fig_ohlc.vbar('index', BAR_WIDTH, 'Open', 'Close', source=source,
+        fig_ohlc.segment('index', 'high', 'index', 'low', source=source, color="black")
+        r = fig_ohlc.vbar('index', BAR_WIDTH, 'open', 'close', source=source,
                           line_color="black", fill_color=inc_cmap)
         return r
 

@@ -44,18 +44,18 @@ data
 # +
 def BBANDS(data, n_lookback, n_std):
     """Bollinger bands indicator"""
-    hlc3 = (data.High + data.Low + data.Close) / 3
+    hlc3 = (data.high + data.low + data.close) / 3
     mean, std = hlc3.rolling(n_lookback).mean(), hlc3.rolling(n_lookback).std()
     upper = mean + n_std*std
     lower = mean - n_std*std
     return upper, lower
 
 
-close = data.Close.values
-sma10 = SMA(data.Close, 10)
-sma20 = SMA(data.Close, 20)
-sma50 = SMA(data.Close, 50)
-sma100 = SMA(data.Close, 100)
+close = data.close.values
+sma10 = SMA(data.close, 10)
+sma20 = SMA(data.close, 20)
+sma50 = SMA(data.close, 50)
+sma100 = SMA(data.close, 100)
 upper, lower = BBANDS(data, 20, 2)
 
 # Design matrix / independent features:
@@ -71,7 +71,7 @@ data['X_DELTA_SMA20'] = (sma20 - sma50) / close
 data['X_DELTA_SMA50'] = (sma50 - sma100) / close
 
 # Indicator features
-data['X_MOM'] = data.Close.pct_change(periods=2)
+data['X_MOM'] = data.close.pct_change(periods=2)
 data['X_BB_upper'] = (upper - close) / close
 data['X_BB_lower'] = (lower - close) / close
 data['X_BB_width'] = (upper - lower) / close
@@ -102,7 +102,7 @@ def get_X(data):
 
 def get_y(data):
     """Return dependent variable y"""
-    y = data.Close.pct_change(48).shift(-48)  # Returns after roughly two days
+    y = data.close.pct_change(48).shift(-48)  # Returns after roughly two days
     y[y.between(-.004, .004)] = 0             # Devalue returns smaller than 0.4%
     y[y > 0] = 1
     y[y < 0] = -1
@@ -186,7 +186,7 @@ class MLTrainOnceStrategy(Strategy):
             return
 
         # Proceed only with out-of-sample data. Prepare some variables
-        high, low, close = self.data.High, self.data.Low, self.data.Close
+        high, low, close = self.data.high, self.data.low, self.data.close
         current_time = self.data.index[-1]
 
         # Forecast the next movement
