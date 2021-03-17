@@ -129,6 +129,7 @@ def _maybe_resample_data(resample_rule, df, indicators, equity_data, trades):
                 mean_time = int(bars.loc[s.index].view('i8').mean())
                 new_bar_idx = new_index.get_loc(mean_time, method='nearest')
                 return new_bar_idx
+
         return f
 
     if len(trades):  # Avoid pandas "resampling on Int64 index" error
@@ -216,6 +217,9 @@ def plot(*, results: pd.Series,
         index=trades['ExitBar'],
         datetime=trades['ExitTime'],
         exit_price=trades['ExitPrice'],
+        entry_index=trades['EntryBar'],
+        entry_datetime=trades['EntryTime'],
+        entry_price=trades['EntryPrice'],
         size=trades['Size'],
         returns_positive=(trades['ReturnPct'] > 0).astype(int).astype(str),
     ))
@@ -229,8 +233,8 @@ def plot(*, results: pd.Series,
     if is_datetime_index:
         fig_ohlc.xaxis.formatter = FuncTickFormatter(
             args=dict(axis=fig_ohlc.xaxis[0],
-                      formatter=DatetimeTickFormatter(days=['%d %b', '%a %d'],
-                                                      months=['%m/%Y', "%b'%y"]),
+                      formatter=DatetimeTickFormatter(days=['%Y/%m/%d'],
+                                                      months=['%Y/%m']),
                       source=source),
             code='''
 this.labels = this.labels || formatter.doFormat(ticks
@@ -242,12 +246,10 @@ return this.labels[index] || "";
     NBSP = '\N{NBSP}' * 4
     ohlc_extreme_values = df[['high', 'low']].copy(deep=False)
     ohlc_tooltips = [
-        ('x, y', NBSP.join(('$index',
-                            '$y{0,0.0[0000]}'))),
-        ('OHLC', NBSP.join(('@open{0,0.0[0000]}',
-                            '@high{0,0.0[0000]}',
-                            '@low{0,0.0[0000]}',
-                            '@close{0,0.0[0000]}'))),
+        ('open', '@open'),
+        ('high', '@high'),
+        ('low', '@low'),
+        ('close', '@close'),
         ('volume', '@volume{0,0}')]
 
     def new_indicator_figure(**kwargs):
@@ -266,7 +268,7 @@ return this.labels[index] || "";
 
         if is_datetime_index:
             formatters = {'@datetime': 'datetime'}
-            tooltips = [("Date", "@datetime{%c}")] + tooltips
+            tooltips = [("Date", "@datetime{%Y-%m-%d %H:%M:%S}")] + tooltips
         else:
             formatters = {}
             tooltips = [("#", "@index")] + tooltips
@@ -397,6 +399,15 @@ return this.labels[index] || "";
                          marker='triangle', line_color='black', size='marker_size')
         r2 = fig.scatter('index', 'returns_short', source=trade_source, fill_color=cmap,
                          marker='inverted_triangle', line_color='black', size='marker_size')
+
+        # 매수시점 캔들 차트에 바로 그림
+        fig_ohlc.scatter('entry_index', 'entry_price', source=trade_source, size='marker_size',
+                         fill_color='blue', color='blue', line_color='blue', marker='triangle')
+
+        # 매도시점 캔들 차트에 바로 그림
+        fig_ohlc.scatter('index', 'exit_price', source=trade_source, size='marker_size',
+                         fill_color='red', color='red', line_color='red', marker='inverted_triangle')
+
         tooltips = [("Size", "@size{0,0}")]
         if 'count' in trades:
             tooltips.append(("Count", "@count{0,0}"))
@@ -454,6 +465,7 @@ return this.labels[index] || "";
 
         df2['inc'] = (df2.close >= df2.open).astype(int).astype(str)
         df2.index.name = None
+
         source2 = ColumnDataSource(df2)
         fig_ohlc.segment('index', 'high', 'index', 'low', source=source2, color='#bbbbbb')
         colors_lighter = [lightness(BEAR_COLOR, .92),
