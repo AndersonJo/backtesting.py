@@ -26,7 +26,6 @@ from ._util import _Array, _as_str
 
 __pdoc__ = {}
 
-
 OHLCV_AGG = OrderedDict((
     ('open', 'first'),
     ('high', 'max'),
@@ -267,7 +266,7 @@ http://pandas.pydata.org/pandas-docs/stable/timeseries.html#offset-aliases
         frame = frame.f_back
         level += 1
         if isinstance(frame.f_locals.get('self'), Strategy):  # type: ignore
-            strategy_I = frame.f_locals['self'].I             # type: ignore
+            strategy_I = frame.f_locals['self'].I  # type: ignore
             break
     else:
         def strategy_I(func, *args, **kwargs):
@@ -314,6 +313,7 @@ def random_ohlc_data(example_data: pd.DataFrame, *,
     >>> next(ohlc_generator)  # returns new random data
     ...
     """
+
     def shuffle(x):
         return x.sample(frac=frac, replace=frac > 1, random_state=random_state)
 
@@ -441,13 +441,15 @@ class TrailingStrategy(Strategy):
 
     def next(self):
         super().next()
+        # Can't use index=-1 because self.__atr is not an Indicator type
+        index = len(self.data) - 1
         for trade in self.trades:
             if trade.is_long:
                 trade.sl = max(trade.sl or -np.inf,
-                               self.data.close[-1] - self.__atr[-1] * self.__n_atr)
+                               self.data.Close[index] - self.__atr[index] * self.__n_atr)
             else:
                 trade.sl = min(trade.sl or np.inf,
-                               self.data.close[-1] + self.__atr[-1] * self.__n_atr)
+                               self.data.Close[index] + self.__atr[index] * self.__n_atr)
 
 
 # Prevent pdoc3 documenting __init__ signature of Strategy subclasses
@@ -455,13 +457,12 @@ for cls in list(globals().values()):
     if isinstance(cls, type) and issubclass(cls, Strategy):
         __pdoc__[f'{cls.__name__}.__init__'] = False
 
-
 # NOTE: Don't put anything below this __all__ list
 
 __all__ = [getattr(v, '__name__', k)
-           for k, v in globals().items()                        # export
-           if ((callable(v) and v.__module__ == __name__ or     # callables from this module
-                k.isupper()) and                                # or CONSTANTS
+           for k, v in globals().items()  # export
+           if ((callable(v) and v.__module__ == __name__ or  # callables from this module
+                k.isupper()) and  # or CONSTANTS
                not getattr(v, '__name__', k).startswith('_'))]  # neither marked internal
 
 # NOTE: Don't put anything below here. See above.
