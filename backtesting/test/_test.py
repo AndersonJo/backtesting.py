@@ -58,8 +58,8 @@ class SmaCross(Strategy):
     slow = 30
 
     def init(self):
-        self.sma1 = self.I(SMA, self.data.close, self.fast)
-        self.sma2 = self.I(SMA, self.data.close, self.slow)
+        self.sma1 = self.I(SMA, self.data.Close, self.fast)
+        self.sma2 = self.I(SMA, self.data.Close, self.slow)
 
     def next(self):
         if crossover(self.sma1, self.sma2):
@@ -88,13 +88,13 @@ class TestBacktest(TestCase):
 
     def test_data_missing_columns(self):
         df = GOOG.copy(deep=False)
-        del df['open']
+        del df['Open']
         with self.assertRaises(ValueError):
             Backtest(df, SmaCross).run()
 
     def test_data_nan_columns(self):
         df = GOOG.copy()
-        df['open'] = np.nan
+        df['Open'] = np.nan
         with self.assertRaises(ValueError):
             Backtest(df, SmaCross).run()
 
@@ -105,12 +105,12 @@ class TestBacktest(TestCase):
 
         class S(Strategy):
             def init(self):
-                assert len(self.data.MCap) == len(self.data.close)
-                assert len(self.data['P/E']) == len(self.data.close)
+                assert len(self.data.MCap) == len(self.data.Close)
+                assert len(self.data['P/E']) == len(self.data.Close)
 
             def next(self):
-                assert len(self.data.MCap) == len(self.data.close)
-                assert len(self.data['P/E']) == len(self.data.close)
+                assert len(self.data.MCap) == len(self.data.Close)
+                assert len(self.data['P/E']) == len(self.data.Close)
 
         Backtest(df, S).run()
 
@@ -123,13 +123,13 @@ class TestBacktest(TestCase):
     def test_assertions(self):
         class Assertive(Strategy):
             def init(self):
-                self.sma = self.I(SMA, self.data.close, 10)
+                self.sma = self.I(SMA, self.data.Close, 10)
                 self.remains_indicator = np.r_[2] * np.cumsum(self.sma * 5 + 1) * np.r_[2]
 
-                self.transpose_invalid = self.I(lambda: np.column_stack((self.data.open,
-                                                                         self.data.close)))
+                self.transpose_invalid = self.I(lambda: np.column_stack((self.data.Open,
+                                                                         self.data.Close)))
 
-                resampled = resample_apply('W', SMA, self.data.close, 3)
+                resampled = resample_apply('W', SMA, self.data.Close, 3)
                 resampled_ind = resample_apply('W', SMA, self.sma, 3)
                 assert np.unique(resampled[-5:]).size == 1
                 assert np.unique(resampled[-6:]).size == 2
@@ -141,7 +141,7 @@ class TestBacktest(TestCase):
 
                 assert self.data.pip == .01
 
-                assert float(self.data.close) == self.data.close[-1]
+                assert float(self.data.Close) == self.data.Close[-1]
 
             def next(self, FIVE_DAYS=pd.Timedelta('3 days')):
                 assert self.equity >= 0
@@ -151,11 +151,11 @@ class TestBacktest(TestCase):
                 assert self.remains_indicator.name
                 assert isinstance(self.remains_indicator._opts, dict)
 
-                assert not np.isnan(self.data.open[-1])
-                assert not np.isnan(self.data.high[-1])
-                assert not np.isnan(self.data.low[-1])
-                assert not np.isnan(self.data.close[-1])
-                assert not np.isnan(self.data.volume[-1])
+                assert not np.isnan(self.data.Open[-1])
+                assert not np.isnan(self.data.High[-1])
+                assert not np.isnan(self.data.Low[-1])
+                assert not np.isnan(self.data.Close[-1])
+                assert not np.isnan(self.data.Volume[-1])
                 assert not np.isnan(self.sma[-1])
                 assert self.data.index[-1]
 
@@ -165,9 +165,9 @@ class TestBacktest(TestCase):
                 self.position.pl_pct
                 self.position.is_long
 
-                if crossover(self.sma, self.data.close):
+                if crossover(self.sma, self.data.Close):
                     self.orders.cancel()  # cancels only non-contingent
-                    price = self.data.close[-1]
+                    price = self.data.Close[-1]
                     sl, tp = 1.05 * price, .9 * price
 
                     n_orders = len(self.orders)
@@ -205,7 +205,7 @@ class TestBacktest(TestCase):
                         assert trade.value > 0
                         assert trade.sl
                         assert trade.tp
-                        # close multiple times
+                        # Close multiple times
                         self.position.close(.5)
                         self.position.close(.5)
                         self.position.close(.5)
@@ -375,8 +375,8 @@ class TestBacktest(TestCase):
     def test_position_close_portion(self):
         class SmaCross(Strategy):
             def init(self):
-                self.sma1 = self.I(SMA, self.data.close, 10)
-                self.sma2 = self.I(SMA, self.data.close, 20)
+                self.sma1 = self.I(SMA, self.data.Close, 10)
+                self.sma2 = self.I(SMA, self.data.Close, 20)
 
             def next(self):
                 if not self.position and crossover(self.sma1, self.sma2):
@@ -404,7 +404,7 @@ class TestBacktest(TestCase):
             def init(self): pass
 
             def next(self):
-                self.buy(tp=self.data.close * 1.01)
+                self.buy(tp=self.data.Close * 1.01)
 
         self.assertRaises(ValueError, Backtest(SHORT_DATA, S, commission=.02).run)
 
@@ -684,8 +684,8 @@ class TestPlot(TestCase):
                 def ok(x):
                     return x
 
-                self.a = self.I(SMA, self.data.open, 5, overlay=False, name='ok')
-                self.b = self.I(ok, np.random.random(len(self.data.open)))
+                self.a = self.I(SMA, self.data.Open, 5, overlay=False, name='ok')
+                self.b = self.I(ok, np.random.random(len(self.data.Open)))
 
         bt = Backtest(GOOG, Strategy)
         bt.run()
@@ -706,7 +706,7 @@ class TestPlot(TestCase):
                 elif date == pd.Timestamp('Thu 30 Oct 2007'):
                     self.position.close()
                 elif date == pd.Timestamp('Tue 11 Nov 2008'):
-                    self.sell(stop=self.data.low,
+                    self.sell(stop=self.data.Low,
                               limit=324.90,  # High from 14 Nov
                               size=200)
 
@@ -741,8 +741,8 @@ class TestPlot(TestCase):
     def test_indicator_color(self):
         class S(Strategy):
             def init(self):
-                a = self.I(SMA, self.data.close, 5, overlay=True, color='red')
-                b = self.I(SMA, self.data.close, 10, overlay=False, color='blue')
+                a = self.I(SMA, self.data.Close, 5, overlay=True, color='red')
+                b = self.I(SMA, self.data.Close, 10, overlay=False, color='blue')
                 self.I(lambda: (a, b), overlay=False, color=('green', 'orange'))
 
             def next(self):
@@ -758,8 +758,8 @@ class TestPlot(TestCase):
     def test_indicator_scatter(self):
         class S(Strategy):
             def init(self):
-                self.I(SMA, self.data.close, 5, overlay=True, scatter=True)
-                self.I(SMA, self.data.close, 10, overlay=False, scatter=True)
+                self.I(SMA, self.data.Close, 5, overlay=True, scatter=True)
+                self.I(SMA, self.data.Close, 10, overlay=False, scatter=True)
 
             def next(self):
                 pass
@@ -795,7 +795,7 @@ class TestLib(TestCase):
         self.assertEqual(quantile(np.r_[1, 3, 2]), .5)
 
     def test_resample_apply(self):
-        res = resample_apply('D', SMA, EURUSD.close, 10)
+        res = resample_apply('D', SMA, EURUSD.Close, 10)
         self.assertEqual(res.name, 'C[D]')
         self.assertEqual(res.count() / res.size, .9634)
         np.testing.assert_almost_equal(res.iloc[-48:].unique().tolist(),
@@ -805,14 +805,14 @@ class TestLib(TestCase):
         def resets_index(*args):
             return pd.Series(SMA(*args).values)
 
-        res2 = resample_apply('D', resets_index, EURUSD.close, 10)
+        res2 = resample_apply('D', resets_index, EURUSD.Close, 10)
         self.assertTrue((res.dropna() == res2.dropna()).all())
         self.assertTrue((res.index == res2.index).all())
 
         res3 = resample_apply('D', None, EURUSD)
-        self.assertIn('volume', res3)
+        self.assertIn('Volume', res3)
 
-        res3 = resample_apply('D', lambda df: (df.close, df.close), EURUSD)
+        res3 = resample_apply('D', lambda df: (df.Close, df.Close), EURUSD)
         self.assertIsInstance(res3, pd.DataFrame)
 
     def test_plot_heatmaps(self):
@@ -839,9 +839,9 @@ class TestLib(TestCase):
     def test_SignalStrategy(self):
         class S(SignalStrategy):
             def init(self):
-                sma = self.data.close.s.rolling(10).mean()
-                self.set_signal(self.data.close > sma,
-                                self.data.close < sma)
+                sma = self.data.Close.s.rolling(10).mean()
+                self.set_signal(self.data.Close > sma,
+                                self.data.Close < sma)
 
         stats = Backtest(GOOG, S).run()
         self.assertIn(stats['# Trades'], (1181, 1182))  # varies on different archs?
@@ -852,11 +852,11 @@ class TestLib(TestCase):
                 super().init()
                 self.set_atr_periods(40)
                 self.set_trailing_sl(3)
-                self.sma = self.I(lambda: self.data.close.s.rolling(10).mean())
+                self.sma = self.I(lambda: self.data.Close.s.rolling(10).mean())
 
             def next(self):
                 super().next()
-                if not self.position and self.data.close > self.sma:
+                if not self.position and self.data.Close > self.sma:
                     self.buy()
 
         stats = Backtest(GOOG, S).run()
@@ -881,21 +881,21 @@ class TestUtil(TestCase):
         self.assertEqual(_as_str(pd.Series([1, 2], name='x')), 'x')
         self.assertEqual(_as_str(pd.DataFrame()), 'df')
         self.assertEqual(_as_str(lambda x: x), 'λ')
-        for s in ('open', 'high', 'low', 'close', 'volume'):
+        for s in ('Open', 'High', 'Low', 'Close', 'Volume'):
             self.assertEqual(_as_str(_Array([1], name=s)), s[0])
 
     def test_pandas_accessors(self):
         class S(Strategy):
             def init(self):
-                close, index = self.data.close, self.data.index
+                close, index = self.data.Close, self.data.index
                 assert close.s.equals(pd.Series(close, index=index))
-                assert self.data.df['close'].equals(pd.Series(close, index=index))
+                assert self.data.df['Close'].equals(pd.Series(close, index=index))
                 self.data.df['new_key'] = 2 * close
 
             def next(self):
-                close, index = self.data.close, self.data.index
+                close, index = self.data.Close, self.data.index
                 assert close.s.equals(pd.Series(close, index=index))
-                assert self.data.df['close'].equals(pd.Series(close, index=index))
+                assert self.data.df['Close'].equals(pd.Series(close, index=index))
                 assert self.data.df['new_key'].equals(pd.Series(self.data.new_key, index=index))
 
         Backtest(GOOG.iloc[:20], S).run()

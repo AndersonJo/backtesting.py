@@ -36,7 +36,7 @@ from backtesting.test import SMA, GOOG
 
 class SmaCross(Strategy):
     def init(self):
-        price = self.data.close
+        price = self.data.Close
         self.ma1 = self.I(SMA, price, 10)
         self.ma2 = self.I(SMA, price, 20)
 

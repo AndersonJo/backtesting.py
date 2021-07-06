@@ -26,12 +26,13 @@ from ._util import _Array, _as_str
 
 __pdoc__ = {}
 
+
 OHLCV_AGG = OrderedDict((
-    ('open', 'first'),
-    ('high', 'max'),
-    ('low', 'min'),
-    ('close', 'last'),
-    ('volume', 'sum'),
+    ('Open', 'first'),
+    ('High', 'max'),
+    ('Low', 'min'),
+    ('Close', 'last'),
+    ('Volume', 'sum'),
 ))
 """Dictionary of rules for aggregating resampled OHLCV data frames,
 e.g.
@@ -70,7 +71,7 @@ def barssince(condition: Sequence[bool], default=np.inf) -> int:
     Return the number of bars since `condition` sequence was last `True`,
     or if never, return `default`.
 
-        >>> barssince(self.data.close > self.data.open)
+        >>> barssince(self.data.Close > self.data.Open)
         3
     """
     return next(compress(range(len(condition)), reversed(condition)), default)
@@ -81,7 +82,7 @@ def cross(series1: Sequence, series2: Sequence) -> bool:
     Return `True` if `series1` and `series2` just crossed (either
     direction).
 
-        >>> cross(self.data.close, self.sma)
+        >>> cross(self.data.Close, self.sma)
         True
 
     """
@@ -93,7 +94,7 @@ def crossover(series1: Sequence, series2: Sequence) -> bool:
     Return `True` if `series1` just crossed over
     `series2`.
 
-        >>> crossover(self.data.close, self.sma)
+        >>> crossover(self.data.Close, self.sma)
         True
     """
     series1 = (
@@ -148,9 +149,9 @@ def quantile(series: Sequence, quantile: Union[None, float] = None):
     `series` at this quantile. If used to working with percentiles, just
     divide your percentile amount with 100 to obtain quantiles.
 
-        >>> quantile(self.data.close[-20:], .1)
+        >>> quantile(self.data.Close[-20:], .1)
         162.130
-        >>> quantile(self.data.close)
+        >>> quantile(self.data.Close)
         0.13
     """
     if quantile is None:
@@ -210,7 +211,7 @@ http://pandas.pydata.org/pandas-docs/stable/timeseries.html#offset-aliases
         class System(Strategy):
             def init(self):
                 self.sma = resample_apply(
-                    'D', SMA, self.data.close, 10, plot=False)
+                    'D', SMA, self.data.Close, 10, plot=False)
 
     The above short snippet is roughly equivalent to:
 
@@ -218,7 +219,7 @@ http://pandas.pydata.org/pandas-docs/stable/timeseries.html#offset-aliases
             def init(self):
                 # Strategy exposes `self.data` as raw NumPy arrays.
                 # Let's convert closing prices back to pandas Series.
-                close = self.data.close.s
+                close = self.data.Close.s
 
                 # Resample to daily resolution. Aggregate groups
                 # using their last value (i.e. closing price at the end
@@ -266,7 +267,7 @@ http://pandas.pydata.org/pandas-docs/stable/timeseries.html#offset-aliases
         frame = frame.f_back
         level += 1
         if isinstance(frame.f_locals.get('self'), Strategy):  # type: ignore
-            strategy_I = frame.f_locals['self'].I  # type: ignore
+            strategy_I = frame.f_locals['self'].I             # type: ignore
             break
     else:
         def strategy_I(func, *args, **kwargs):
@@ -313,20 +314,19 @@ def random_ohlc_data(example_data: pd.DataFrame, *,
     >>> next(ohlc_generator)  # returns new random data
     ...
     """
-
     def shuffle(x):
         return x.sample(frac=frac, replace=frac > 1, random_state=random_state)
 
-    if len(example_data.columns.intersection({'open', 'high', 'low', 'close'})) != 4:
+    if len(example_data.columns.intersection({'Open', 'High', 'Low', 'Close'})) != 4:
         raise ValueError("`data` must be a pandas.DataFrame with columns "
-                         "'open', 'high', 'low', 'close'")
+                         "'Open', 'High', 'Low', 'Close'")
     while True:
         df = shuffle(example_data)
         df.index = example_data.index
-        padding = df.close - df.open.shift(-1)
-        gaps = shuffle(example_data.open.shift(-1) - example_data.close)
+        padding = df.Close - df.Open.shift(-1)
+        gaps = shuffle(example_data.Open.shift(-1) - example_data.Close)
         deltas = (padding + gaps).shift(1).fillna(0).cumsum()
-        for key in ('open', 'high', 'low', 'close'):
+        for key in ('Open', 'High', 'Low', 'Close'):
             df[key] += deltas
         yield df
 
@@ -427,7 +427,7 @@ class TrailingStrategy(Strategy):
         Set the lookback period for computing ATR. The default value
         of 100 ensures a _stable_ ATR.
         """
-        h, l, c_prev = self.data.high, self.data.low, pd.Series(self.data.close).shift(1)
+        h, l, c_prev = self.data.High, self.data.Low, pd.Series(self.data.Close).shift(1)
         tr = np.max([h - l, (c_prev - h).abs(), (c_prev - l).abs()], axis=0)
         atr = pd.Series(tr).rolling(periods).mean().bfill().values
         self.__atr = atr
@@ -442,7 +442,7 @@ class TrailingStrategy(Strategy):
     def next(self):
         super().next()
         # Can't use index=-1 because self.__atr is not an Indicator type
-        index = len(self.data) - 1
+        index = len(self.data)-1
         for trade in self.trades:
             if trade.is_long:
                 trade.sl = max(trade.sl or -np.inf,
@@ -457,12 +457,13 @@ for cls in list(globals().values()):
     if isinstance(cls, type) and issubclass(cls, Strategy):
         __pdoc__[f'{cls.__name__}.__init__'] = False
 
+
 # NOTE: Don't put anything below this __all__ list
 
 __all__ = [getattr(v, '__name__', k)
-           for k, v in globals().items()  # export
-           if ((callable(v) and v.__module__ == __name__ or  # callables from this module
-                k.isupper()) and  # or CONSTANTS
+           for k, v in globals().items()                        # export
+           if ((callable(v) and v.__module__ == __name__ or     # callables from this module
+                k.isupper()) and                                # or CONSTANTS
                not getattr(v, '__name__', k).startswith('_'))]  # neither marked internal
 
 # NOTE: Don't put anything below here. See above.
