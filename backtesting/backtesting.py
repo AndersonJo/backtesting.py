@@ -738,7 +738,7 @@ class _Broker:
     @property
     def last_price(self) -> float:
         """ Price at the last (current) close. """
-        return self._data.close[-1]
+        return self._data.Close[-1]
 
     def _adjusted_price(self, size=None, price=None) -> float:
         """
@@ -992,11 +992,11 @@ class Backtest:
         Initialize a backtest. Requires data and a strategy to test.
 
         `data` is a `pd.DataFrame` with columns:
-        `open`, `high`, `low`, `close`, and (optionally) `volume`.
+        `Open`, `High`, `Low`, `Close`, and (optionally) `Volume`.
         If any columns are missing, set them to what you have available,
         e.g.
 
-            df['open'] = df['high'] = df['low'] = df['close']
+            df['Open'] = df['High'] = df['Low'] = df['Close']
 
         The passed data frame can contain additional columns that
         can be used by the strategy (e.g. sentiment info).
@@ -1055,19 +1055,19 @@ class Backtest:
             except ValueError:
                 pass
 
-        if 'volume' not in data:
-            data['volume'] = np.nan
+        if 'Volume' not in data:
+            data['Volume'] = np.nan
 
         if len(data) == 0:
             raise ValueError('OHLC `data` is empty')
-        if len(data.columns.intersection({'open', 'high', 'low', 'close', 'volume'})) != 5:
+        if len(data.columns.intersection({'Open', 'High', 'Low', 'Close', 'Volume'})) != 5:
             raise ValueError("`data` must be a pandas.DataFrame with columns "
-                             "'open', 'high', 'low', 'close', and (optionally) 'volume'")
-        if data[['open', 'high', 'low', 'close']].isnull().values.any():
+                             "'Open', 'High', 'Low', 'Close', and (optionally) 'Volume'")
+        if data[['Open', 'High', 'Low', 'Close']].isnull().values.any():
             raise ValueError('Some OHLC values are missing (NaN). '
                              'Please strip those lines with `df.dropna()` or '
                              'fill them in with `df.interpolate()` or whatever.')
-        if np.any(data['close'] > cash):
+        if np.any(data['Close'] > cash):
             warnings.warn('Some prices are larger than initial cash value. Note that fractional '
                           'trading is not supported. If you want to trade Bitcoin, '
                           'increase initial cash, or trade μBTC or satoshis instead (GH-134).',
@@ -1166,7 +1166,7 @@ class Backtest:
                 # Next tick, a moment before bar close
                 strategy.next()
             else:
-                # close any remaining open trades so they produce some stats
+                # Close any remaining open trades so they produce some stats
                 for trade in broker.trades:
                     trade.close()
 
@@ -1555,7 +1555,7 @@ class Backtest:
         s.loc['Equity Final [$]'] = equity[-1]
         s.loc['Equity Peak [$]'] = equity.max()
         s.loc['Return [%]'] = (equity[-1] - equity[0]) / equity[0] * 100
-        c = data.close.values
+        c = data.Close.values
         s.loc['Buy & Hold Return [%]'] = (c[-1] - c[0]) / c[0] * 100  # long-only return
 
         def geometric_mean(returns):
