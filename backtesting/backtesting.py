@@ -153,7 +153,7 @@ class Strategy(metaclass=ABCMeta):
         value = _Indicator(value, name=name, plot=plot, overlay=overlay,
                            color=color, scatter=scatter,
                            # _Indicator.s Series accessor uses this:
-                           data=self.data)
+                           index=self.data.index)
         self._indicators.append(value)
         return value
 
@@ -188,12 +188,12 @@ class Strategy(metaclass=ABCMeta):
             super().next()
         """
 
-    class __FULL_EUITY(float):
+    class __FULL_EQUITY(float):
         def __repr__(self): return '.9999'
-    _FULL_EUITY = __FULL_EUITY(1 - sys.float_info.epsilon)
+    _FULL_EQUITY = __FULL_EQUITY(1 - sys.float_info.epsilon)
 
     def buy(self, *,
-            size: float = _FULL_EUITY,
+            size: float = _FULL_EQUITY,
             limit: float = None,
             stop: float = None,
             sl: float = None,
@@ -208,7 +208,7 @@ class Strategy(metaclass=ABCMeta):
         return self._broker.new_order(size, limit, stop, sl, tp)
 
     def sell(self, *,
-             size: float = _FULL_EUITY,
+             size: float = _FULL_EQUITY,
              limit: float = None,
              stop: float = None,
              sl: float = None,
@@ -664,7 +664,9 @@ class _Broker:
     def __init__(self, *, data, cash, commission, margin,
                  trade_on_close, hedging, exclusive_orders, index):
         assert 0 < cash, f"cash should be >0, is {cash}"
-        assert 0 <= commission < .1, f"commission should be between 0-10%, is {commission}"
+        assert -.1 <= commission < .1, \
+            ("commission should be between -10% "
+             f"(e.g. market-maker's rebates) and 10% (fees), is {commission}")
         assert 0 < margin <= 1, f"margin should be between 0 and 1, is {margin}"
         self._data: _Data = data
         self._cash = cash
@@ -1333,7 +1335,7 @@ class Backtest:
                                     names=next(iter(param_combos)).keys()))
 
             def _batch(seq):
-                n = np.clip(len(seq) // (os.cpu_count() or 1), 5, 300)
+                n = np.clip(int(len(seq) // (os.cpu_count() or 1)), 1, 300)
                 for i in range(0, len(seq), n):
                     yield seq[i:i + n]
 
@@ -1352,7 +1354,8 @@ class Backtest:
                     with ProcessPoolExecutor() as executor:
                         futures = [executor.submit(Backtest._mp_task, backtest_uuid, i)
                                    for i in range(len(param_batches))]
-                        for future in _tqdm(as_completed(futures), total=len(futures)):
+                        for future in _tqdm(as_completed(futures), total=len(futures),
+                                            desc='Backtest.optimize'):
                             batch_index, values = future.result()
                             for value, params in zip(values, param_batches[batch_index]):
                                 heatmap[tuple(params.values())] = value
@@ -1420,9 +1423,11 @@ class Backtest:
 
             # np.inf/np.nan breaks sklearn, np.finfo(float).max breaks skopt.plots.plot_objective
             INVALID = 1e300
+            progress = iter(_tqdm(repeat(None), total=max_tries, desc='Backtest.optimize'))
 
             @use_named_args(dimensions=dimensions)
             def objective_function(**params):
+                next(progress)
                 # Check constraints
                 # TODO: Adjust after https://github.com/scikit-optimize/scikit-optimize/pull/971
                 if not constraint(AttrDict(params)):
