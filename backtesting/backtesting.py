@@ -199,6 +199,7 @@ class Strategy(metaclass=ABCMeta):
             sl: float = None,
             tp: float = None):
         """
+        실행하면 다음날 시가에 구매를 하게 된다
         Place a new long order. For explanation of parameters, see `Order` and its properties.
 
         See also `Strategy.sell()`.
